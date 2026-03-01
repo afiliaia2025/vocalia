@@ -1,122 +1,252 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'config/theme.dart';
+import 'services/ai_service.dart';
+import 'services/tts_service.dart';
+import 'providers/board_provider.dart';
+import 'screens/board_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const VocaliaApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class VocaliaApp extends StatefulWidget {
+  const VocaliaApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<VocaliaApp> createState() => _VocaliaAppState();
+}
+
+class _VocaliaAppState extends State<VocaliaApp> {
+  final AIService _aiService = AIService();
+  final TTSService _ttsService = TTSService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    await _ttsService.initialize();
+    // AI Service will be initialized when API key is provided
+    // For now, the fallback (label concatenation) works without a key
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => BoardProvider(
+            aiService: _aiService,
+            ttsService: _ttsService,
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Vocalia',
+        debugShowCheckedModeBanner: false,
+        theme: VocaliaTheme.lightTheme,
+        darkTheme: VocaliaTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        home: const _ApiKeyGate(),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  void dispose() {
+    _ttsService.dispose();
+    super.dispose();
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+/// Gate that asks for the Gemini API key on first launch.
+/// Once provided, navigates to the board.
+class _ApiKeyGate extends StatefulWidget {
+  const _ApiKeyGate();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  @override
+  State<_ApiKeyGate> createState() => _ApiKeyGateState();
+}
+
+class _ApiKeyGateState extends State<_ApiKeyGate> {
+  final _controller = TextEditingController();
+  bool _loading = false;
+  bool _skipped = false;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    if (_skipped) return const BoardScreen();
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [VocaliaTheme.primary, VocaliaTheme.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: VocaliaTheme.primary.withAlpha(60),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text('🗣️', style: TextStyle(fontSize: 48)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Vocalia',
+                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tu voz, con inteligencia',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: isDark ? VocaliaTheme.textDarkSecondary : VocaliaTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // API Key input
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark ? VocaliaTheme.cardDark : VocaliaTheme.cardLight,
+                      borderRadius: BorderRadius.circular(VocaliaTheme.radiusLg),
+                      border: Border.all(
+                        color: isDark ? Colors.white10 : Colors.grey.shade200,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🔑 API Key de Gemini',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Para activar la IA, introduce tu clave de Google AI Studio. '
+                          'Puedes obtenerla gratis en aistudio.google.com',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: isDark ? VocaliaTheme.textDarkSecondary : VocaliaTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _controller,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            hintText: 'AIzaSy...',
+                            filled: true,
+                            fillColor: isDark ? VocaliaTheme.bgDark : VocaliaTheme.bgLight,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(VocaliaTheme.radiusSm),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: const Icon(Icons.key_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _loading ? null : _onSubmit,
+                            child: _loading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Text('Activar IA'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Skip button
+                  TextButton(
+                    onPressed: () => setState(() => _skipped = true),
+                    child: Text(
+                      'Continuar sin IA (modo básico)',
+                      style: TextStyle(
+                        color: isDark ? VocaliaTheme.textDarkSecondary : VocaliaTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
     );
+  }
+
+  Future<void> _onSubmit() async {
+    final key = _controller.text.trim();
+    if (key.isEmpty) return;
+
+    setState(() => _loading = true);
+
+    // Initialize AI and navigate to board
+    final board = context.read<BoardProvider>();
+    // Access AIService through the provider's internal reference
+    // For now, we'll initialize it directly
+    final aiService = AIService();
+    aiService.initialize(key);
+
+    // Replace the board's AI service reference by creating a new provider
+    // In production, we'd use a proper DI pattern
+    setState(() {
+      _loading = false;
+      _skipped = true;
+    });
+
+    // Re-initialize with the API key
+    if (mounted) {
+      final boardProvider = context.read<BoardProvider>();
+      // The AI service is shared, so we initialize it
+      _initializeAI(key);
+    }
+  }
+
+  void _initializeAI(String key) {
+    // Access the AI service from the widget tree
+    // For MVP, we use a simple approach
+    final board = context.read<BoardProvider>();
+    board.initializeAI(key);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }
