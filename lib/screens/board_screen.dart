@@ -594,7 +594,7 @@ class _PictogramButtonState extends State<_PictogramButton> {
 }
 
 // ═══════════════════════════════════════════════════════
-// ACTION BAR — Premium glassmorphism bottom bar
+// ACTION BAR — Auto-speak mode: Clear, Backspace, Status
 // ═══════════════════════════════════════════════════════
 class _ActionBar extends StatelessWidget {
   const _ActionBar();
@@ -608,7 +608,7 @@ class _ActionBar extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.black.withAlpha(60)
@@ -640,14 +640,15 @@ class _ActionBar extends StatelessWidget {
                 onPressed: board.hasSelection ? board.removeLastPictogram : null,
               ),
               const SizedBox(width: 12),
-              // SPEAK button
+              // ─── Auto-speak status area ───
               Expanded(
-                child: _SpeakButton(
-                  onPressed: board.hasSelection
-                      ? () => board.generateAndSpeak()
-                      : null,
+                child: _AutoSpeakStatus(
+                  hasSelection: board.hasSelection,
                   isGenerating: board.isGenerating,
                   isSpeaking: board.isSpeaking,
+                  hasGeneratedText: board.generatedText != null,
+                  onRepeat: board.canSpeak ? () => board.repeatPhrase() : null,
+                  onStop: board.isSpeaking ? () => board.stopSpeaking() : null,
                 ),
               ),
             ],
@@ -687,7 +688,7 @@ class _ActionButton extends StatelessWidget {
         onTap: onPressed,
         child: Container(
           width: 62,
-          height: 56,
+          height: 50,
           alignment: Alignment.center,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -711,75 +712,204 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _SpeakButton extends StatelessWidget {
-  final VoidCallback? onPressed;
+/// Shows the auto-speak status: waiting, thinking, speaking, or idle
+class _AutoSpeakStatus extends StatelessWidget {
+  final bool hasSelection;
   final bool isGenerating;
   final bool isSpeaking;
+  final bool hasGeneratedText;
+  final VoidCallback? onRepeat;
+  final VoidCallback? onStop;
 
-  const _SpeakButton({
-    this.onPressed,
+  const _AutoSpeakStatus({
+    required this.hasSelection,
     required this.isGenerating,
     required this.isSpeaking,
+    required this.hasGeneratedText,
+    this.onRepeat,
+    this.onStop,
   });
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null;
+    if (isSpeaking) {
+      // ─── Speaking state
+      return GestureDetector(
+        onTap: onStop,
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [VocaliaTheme.secondary, VocaliaTheme.secondaryDark],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: VocaliaTheme.secondary.withAlpha(60),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.volume_up_rounded, color: Colors.white, size: 22),
+              const SizedBox(width: 8),
+              const Text(
+                'Hablando...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(40),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.stop_rounded, color: Colors.white, size: 18),
+              ),
+            ],
+          ),
+        ).animate(onPlay: (c) => c.repeat(reverse: true))
+            .shimmer(duration: 1200.ms, color: Colors.white.withAlpha(30)),
+      );
+    }
 
-    return GestureDetector(
-      onTap: onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        height: 56,
+    if (isGenerating) {
+      // ─── Thinking state
+      return Container(
+        height: 50,
         decoration: BoxDecoration(
-          gradient: enabled
-              ? (isSpeaking
-                  ? const LinearGradient(colors: [VocaliaTheme.secondary, VocaliaTheme.secondaryDark])
-                  : VocaliaTheme.speakButtonGradient)
-              : null,
-          color: enabled ? null : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: (isSpeaking ? VocaliaTheme.secondary : VocaliaTheme.primary).withAlpha(80),
-                    blurRadius: 20,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
+          gradient: VocaliaTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: VocaliaTheme.primary.withAlpha(40),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isGenerating)
-              const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-              )
-            else
-              Icon(
-                isSpeaking ? Icons.stop_rounded : Icons.campaign_rounded,
-                color: enabled ? Colors.white : Colors.grey.shade500,
-                size: 26,
-              ),
-            const SizedBox(width: 8),
-            Text(
-              isGenerating
-                  ? 'Pensando...'
-                  : (isSpeaking ? 'Parar' : 'Hablar'),
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Interpretando...',
               style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                color: enabled ? Colors.white : Colors.grey.shade500,
-                letterSpacing: 0.5,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.3,
               ),
             ),
           ],
         ),
+      );
+    }
+
+    if (hasGeneratedText && !hasSelection) {
+      // ─── Done state — show repeat
+      return GestureDetector(
+        onTap: onRepeat,
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            color: VocaliaTheme.accent.withAlpha(20),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: VocaliaTheme.accent.withAlpha(60)),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.replay_rounded, color: VocaliaTheme.accent, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'Repetir',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: VocaliaTheme.accent,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (hasSelection) {
+      // ─── Waiting state — auto-speak will trigger soon
+      return Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: VocaliaTheme.primary.withAlpha(10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: VocaliaTheme.primary.withAlpha(30)),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.auto_awesome, color: VocaliaTheme.primary.withAlpha(180), size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Hablaré en un momento...',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: VocaliaTheme.primary.withAlpha(180),
+                fontStyle: FontStyle.italic,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ).animate(onPlay: (c) => c.repeat(reverse: true))
+          .fadeIn(duration: 800.ms)
+          .then()
+          .fade(begin: 1, end: 0.5, duration: 800.ms);
+    }
+
+    // ─── Idle state — no selection
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.touch_app_rounded, color: Colors.grey.shade400, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'Toca para hablar',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade500,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }

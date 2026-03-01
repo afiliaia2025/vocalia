@@ -19,15 +19,18 @@ class VocaliaTheme {
 
   // ─── Category Colors — For visual distinction ───
   static const List<Color> categoryColors = [
+    Color(0xFFFFB300),  // Básico — gold (core words first!)
     Color(0xFFFF6B9D),  // Emociones — pink
+    Color(0xFFFFD54F),  // Acciones — yellow
     Color(0xFFFF8A65),  // Comida — orange
     Color(0xFF4FC3F7),  // Bebidas — blue
     Color(0xFF81C784),  // Lugares — green
     Color(0xFFBA68C8),  // Personas — purple
-    Color(0xFFFFD54F),  // Acciones — yellow
     Color(0xFFEF5350),  // Cuerpo — red
     Color(0xFF4DD0E1),  // Tiempo — cyan
     Color(0xFF90A4AE),  // Objetos — grey-blue
+    Color(0xFF7E57C2),  // Adjetivos — indigo
+    Color(0xFF26A69A),  // Social — teal
   ];
 
   // ─── Gradient Presets ───

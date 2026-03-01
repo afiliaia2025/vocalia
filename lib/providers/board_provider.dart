@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/pictogram.dart';
@@ -7,16 +8,21 @@ import '../services/tts_service.dart';
 import '../data/pictogram_data.dart';
 
 /// Central state manager for the communication board.
+/// Auto-speak mode: after a short pause, automatically generates and speaks.
 class BoardProvider extends ChangeNotifier {
   final AIService _aiService;
   final TTSService _ttsService;
+
+  // ─── Auto-speak debounce ───
+  Timer? _autoSpeakTimer;
+  static const Duration autoSpeakDelay = Duration(milliseconds: 1800);
 
   // ─── State ───
   List<Pictogram> _selectedPictograms = [];
   String? _generatedText;
   bool _isGenerating = false;
   bool _isSpeaking = false;
-  String _activeCategory = 'emotions';
+  String _activeCategory = 'basic';
   List<GeneratedPhrase> _history = [];
   List<GeneratedPhrase> _favorites = [];
 
@@ -52,32 +58,69 @@ class BoardProvider extends ChangeNotifier {
 
   // ─── Actions ───
 
-  /// Add a pictogram to the current sequence.
+  /// Add a pictogram and start auto-speak timer.
   void addPictogram(Pictogram pictogram) {
     _selectedPictograms = [..._selectedPictograms, pictogram];
-    _generatedText = null; // Reset generated text on new selection
+    _generatedText = null;
     notifyListeners();
+
+    // Reset the auto-speak timer
+    _scheduleAutoSpeak();
   }
 
-  /// Remove the last pictogram from the sequence.
+  /// Remove the last pictogram and restart the timer.
   void removeLastPictogram() {
     if (_selectedPictograms.isEmpty) return;
     _selectedPictograms = _selectedPictograms.sublist(0, _selectedPictograms.length - 1);
     _generatedText = null;
     notifyListeners();
+
+    // If there are still pictograms, restart the timer
+    if (_selectedPictograms.isNotEmpty) {
+      _scheduleAutoSpeak();
+    } else {
+      _cancelAutoSpeak();
+    }
   }
 
   /// Clear all selected pictograms.
   void clearSelection() {
+    _cancelAutoSpeak();
     _selectedPictograms = [];
     _generatedText = null;
+    _isSpeaking = false;
     notifyListeners();
+    _ttsService.stop();
   }
 
   /// Switch the active pictogram category.
   void setCategory(String categoryId) {
     _activeCategory = categoryId;
     notifyListeners();
+  }
+
+  // ─── Auto-speak timer ───
+
+  void _scheduleAutoSpeak() {
+    _cancelAutoSpeak();
+    _autoSpeakTimer = Timer(autoSpeakDelay, () {
+      _autoGenerateAndSpeak();
+    });
+  }
+
+  void _cancelAutoSpeak() {
+    _autoSpeakTimer?.cancel();
+    _autoSpeakTimer = null;
+  }
+
+  Future<void> _autoGenerateAndSpeak() async {
+    if (_selectedPictograms.isEmpty) return;
+    if (_isGenerating || _isSpeaking) return;
+
+    await generatePhrase();
+    if (_generatedText != null) {
+      await speak();
+    }
   }
 
   /// Generate a phrase from the current pictogram sequence using AI.
@@ -110,8 +153,9 @@ class BoardProvider extends ChangeNotifier {
     }
   }
 
-  /// Generate phrase and immediately speak it.
+  /// Generate phrase and immediately speak it (manual trigger).
   Future<void> generateAndSpeak() async {
+    _cancelAutoSpeak();
     await generatePhrase();
     if (_generatedText != null) {
       await speak();
@@ -137,17 +181,22 @@ class BoardProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Repeat the last phrase.
+  Future<void> repeatPhrase() async {
+    if (_generatedText != null) {
+      await speak();
+    }
+  }
+
   /// Toggle favorite status of a phrase.
   void toggleFavorite(GeneratedPhrase phrase) {
     final updated = phrase.copyWith(isFavorite: !phrase.isFavorite);
 
-    // Update in history
     final historyIndex = _history.indexWhere((p) => p.id == phrase.id);
     if (historyIndex >= 0) {
       _history[historyIndex] = updated;
     }
 
-    // Add/remove from favorites
     if (updated.isFavorite) {
       _favorites.insert(0, updated);
     } else {
@@ -166,6 +215,7 @@ class BoardProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _cancelAutoSpeak();
     _ttsService.dispose();
     super.dispose();
   }
