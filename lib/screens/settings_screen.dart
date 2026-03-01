@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/theme.dart';
+import '../providers/board_provider.dart';
 
 /// Settings screen for Vocalia.
 class SettingsScreen extends StatefulWidget {
@@ -32,6 +35,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ─── User Profile ───
+          _SectionHeader(title: '👤 Perfil de usuario', subtitle: 'Configuración actual'),
+          Builder(
+            builder: (context) {
+              final board = context.read<BoardProvider>();
+              final name = board.userName.isNotEmpty ? board.userName : 'Sin nombre';
+              return _SettingsCard(
+                isDark: isDark,
+                children: [
+                  ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: VocaliaTheme.primary,
+                      child: Icon(Icons.person, color: Colors.white),
+                    ),
+                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    subtitle: Text(
+                      'Columnas: ${board.gridColumns} · '
+                      'Escala: ${(board.pictogramScale * 100).round()}% · '
+                      'Auto-habla: ${board.userProfile.autoSpeakDelayMs}ms',
+                    ),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.refresh_rounded, color: VocaliaTheme.secondary),
+                    title: const Text('Restablecer perfil'),
+                    subtitle: const Text('Volver a hacer la configuración inicial'),
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('¿Restablecer perfil?'),
+                          content: const Text('Se borrará la configuración actual y volverás a la pantalla de configuración inicial.'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              style: ElevatedButton.styleFrom(backgroundColor: VocaliaTheme.secondary),
+                              child: const Text('Restablecer', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && context.mounted) {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.remove('onboarding_complete');
+                        await prefs.remove('user_profile');
+                        if (context.mounted) {
+                          // Force restart the app to show onboarding
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                          // Trigger a full app rebuild
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Perfil restablecido. Recarga la app para configurar de nuevo.')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+
           // ─── AI Configuration ───
           _SectionHeader(title: '🤖 Inteligencia Artificial', subtitle: 'Configura el motor de IA'),
           _SettingsCard(
