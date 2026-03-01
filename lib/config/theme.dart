@@ -1,32 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Vocalia Design System
+/// Vocalia Premium Design System
 /// Accessibility-first: High contrast, large touch targets, clear typography
+/// Visual excellence: Gradients, glassmorphism, depth, premium feel
 class VocaliaTheme {
-  // ─── Brand Colors ───
-  static const Color primary = Color(0xFF6C63FF);       // Vibrant purple
-  static const Color primaryLight = Color(0xFF9D97FF);
-  static const Color primaryDark = Color(0xFF4A42D4);
-  static const Color secondary = Color(0xFFFF6B9D);     // Warm pink
-  static const Color accent = Color(0xFF00D4AA);         // Teal accent
-  static const Color warning = Color(0xFFFFB74D);
-  static const Color error = Color(0xFFEF5350);
-  static const Color success = Color(0xFF66BB6A);
+  // ─── Brand Colors — Rich, vibrant, premium ───
+  static const Color primary = Color(0xFF7B61FF);       // Electric violet
+  static const Color primaryLight = Color(0xFFA78BFA);   // Soft lavender
+  static const Color primaryDark = Color(0xFF5B3FD9);    // Deep purple
+  static const Color secondary = Color(0xFFFF6B9D);      // Hot coral-pink
+  static const Color secondaryDark = Color(0xFFE8457A);  // Deep pink
+  static const Color accent = Color(0xFF00D4AA);          // Bright teal
+  static const Color accentDark = Color(0xFF00B894);     // Deep teal
+  static const Color warning = Color(0xFFFFA726);
+  static const Color error = Color(0xFFFF5252);
+  static const Color success = Color(0xFF00E676);
+
+  // ─── Category Colors — For visual distinction ───
+  static const List<Color> categoryColors = [
+    Color(0xFFFF6B9D),  // Emociones — pink
+    Color(0xFFFF8A65),  // Comida — orange
+    Color(0xFF4FC3F7),  // Bebidas — blue
+    Color(0xFF81C784),  // Lugares — green
+    Color(0xFFBA68C8),  // Personas — purple
+    Color(0xFFFFD54F),  // Acciones — yellow
+    Color(0xFFEF5350),  // Cuerpo — red
+    Color(0xFF4DD0E1),  // Tiempo — cyan
+    Color(0xFF90A4AE),  // Objetos — grey-blue
+  ];
+
+  // ─── Gradient Presets ───
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF7B61FF), Color(0xFFFF6B9D)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient darkGradient = LinearGradient(
+    colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  static const LinearGradient cardGradient = LinearGradient(
+    colors: [Color(0xFFFFFFFF), Color(0xFFF0EDFF)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient speakButtonGradient = LinearGradient(
+    colors: [Color(0xFF7B61FF), Color(0xFF5B3FD9), Color(0xFF3A1FA0)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   // ─── Surfaces ───
-  static const Color bgLight = Color(0xFFF8F9FF);
-  static const Color bgDark = Color(0xFF1A1A2E);
+  static const Color bgLight = Color(0xFFF5F3FF);        // Warm violet tint
+  static const Color bgDark = Color(0xFF0F0F1A);          // Deep space
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceDark = Color(0xFF252540);
+  static const Color surfaceDark = Color(0xFF1E1E32);
   static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color cardDark = Color(0xFF2D2D4A);
+  static const Color cardDark = Color(0xFF2A2A45);
 
   // ─── Text ───
   static const Color textPrimary = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textSecondary = Color(0xFF8B8FA3);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
-  static const Color textDark = Color(0xFFE8E8F0);
+  static const Color textDark = Color(0xFFF0F0FF);
   static const Color textDarkSecondary = Color(0xFF9CA3AF);
 
   // ─── Accessibility: Minimum touch target ───
@@ -35,10 +76,10 @@ class VocaliaTheme {
   static const double pictogramSizeLarge = 100.0;
 
   // ─── Border Radius ───
-  static const double radiusSm = 12.0;
-  static const double radiusMd = 16.0;
-  static const double radiusLg = 24.0;
-  static const double radiusXl = 32.0;
+  static const double radiusSm = 14.0;
+  static const double radiusMd = 20.0;
+  static const double radiusLg = 28.0;
+  static const double radiusXl = 36.0;
 
   // ─── Spacing ───
   static const double spacingXs = 4.0;
@@ -46,6 +87,44 @@ class VocaliaTheme {
   static const double spacingMd = 16.0;
   static const double spacingLg = 24.0;
   static const double spacingXl = 32.0;
+
+  // ─── Shadows ───
+  static List<BoxShadow> get softShadow => [
+    BoxShadow(
+      color: primary.withAlpha(15),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: Colors.black.withAlpha(8),
+      blurRadius: 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
+
+  static List<BoxShadow> get glowShadow => [
+    BoxShadow(
+      color: primary.withAlpha(40),
+      blurRadius: 24,
+      spreadRadius: 2,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> get cardShadow => [
+    BoxShadow(
+      color: primary.withAlpha(8),
+      blurRadius: 16,
+      spreadRadius: 0,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Colors.black.withAlpha(5),
+      blurRadius: 6,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   // ─── Light Theme ───
   static ThemeData get lightTheme {
@@ -63,7 +142,7 @@ class VocaliaTheme {
       scaffoldBackgroundColor: bgLight,
       textTheme: _textTheme(Brightness.light),
       appBarTheme: AppBarTheme(
-        backgroundColor: surfaceLight,
+        backgroundColor: Colors.transparent,
         foregroundColor: textPrimary,
         elevation: 0,
         centerTitle: true,
@@ -75,7 +154,7 @@ class VocaliaTheme {
       ),
       cardTheme: CardThemeData(
         color: cardLight,
-        elevation: 2,
+        elevation: 0,
         shadowColor: primary.withAlpha(25),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMd),
@@ -86,10 +165,11 @@ class VocaliaTheme {
           backgroundColor: primary,
           foregroundColor: textOnPrimary,
           minimumSize: const Size(minTouchTarget, minTouchTarget),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMd),
           ),
+          elevation: 0,
           textStyle: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -99,7 +179,7 @@ class VocaliaTheme {
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primary,
         foregroundColor: textOnPrimary,
-        elevation: 4,
+        elevation: 8,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surfaceLight,
@@ -130,7 +210,7 @@ class VocaliaTheme {
       scaffoldBackgroundColor: bgDark,
       textTheme: _textTheme(Brightness.dark),
       appBarTheme: AppBarTheme(
-        backgroundColor: surfaceDark,
+        backgroundColor: Colors.transparent,
         foregroundColor: textDark,
         elevation: 0,
         centerTitle: true,
@@ -142,7 +222,7 @@ class VocaliaTheme {
       ),
       cardTheme: CardThemeData(
         color: cardDark,
-        elevation: 2,
+        elevation: 0,
         shadowColor: Colors.black26,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMd),
@@ -153,10 +233,11 @@ class VocaliaTheme {
           backgroundColor: primaryLight,
           foregroundColor: bgDark,
           minimumSize: const Size(minTouchTarget, minTouchTarget),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMd),
           ),
+          elevation: 0,
           textStyle: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -166,7 +247,7 @@ class VocaliaTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryLight,
         foregroundColor: bgDark,
-        elevation: 4,
+        elevation: 8,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surfaceDark,
