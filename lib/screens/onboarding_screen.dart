@@ -34,7 +34,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   // Step 4: Communication needs
   final Set<CommunicationNeed> _selectedNeeds = {};
 
-  static const int _totalPages = 4;
+  static const int _totalPages = 5;
 
   @override
   void initState() {
@@ -55,10 +55,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   bool get _canProceed {
     switch (_currentPage) {
-      case 0: return _nameController.text.trim().isNotEmpty;
-      case 1: return _motorAbility != null;
-      case 2: return _cognitiveLevel != null;
-      case 3: return _selectedNeeds.isNotEmpty;
+      case 0: return true; // Welcome page — always can proceed
+      case 1: return _nameController.text.trim().isNotEmpty;
+      case 2: return _motorAbility != null;
+      case 3: return _cognitiveLevel != null;
+      case 4: return _selectedNeeds.isNotEmpty;
       default: return false;
     }
   }
@@ -132,8 +133,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           child: Column(
             children: [
               const SizedBox(height: 16),
-              // Progress indicator
-              _buildProgress(),
+              // Progress indicator (hidden on welcome page)
+              if (_currentPage > 0) _buildProgress(),
               // Pages
               Expanded(
                 child: PageView(
@@ -141,6 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   physics: const NeverScrollableScrollPhysics(),
                   onPageChanged: (i) => setState(() => _currentPage = i),
                   children: [
+                    _buildWelcomePage(),
                     _buildNamePage(),
                     _buildMotorPage(),
                     _buildCognitivePage(),
@@ -159,14 +161,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   // ═══════════════════════════════════════════════════════
-  // PROGRESS BAR
+  // PROGRESS BAR (4 steps, excluding welcome page)
   // ═══════════════════════════════════════════════════════
   Widget _buildProgress() {
+    const configPages = _totalPages - 1; // exclude welcome page
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
       child: Row(
-        children: List.generate(_totalPages, (i) {
-          final active = i <= _currentPage;
+        children: List.generate(configPages, (i) {
+          final active = i < _currentPage; // offset by 1 since welcome is page 0
           return Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 400),
@@ -184,6 +187,143 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
           );
         }),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // PAGE 0: Welcome — What is Vocalia & unique benefits
+  // ═══════════════════════════════════════════════════════
+  Widget _buildWelcomePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          // App icon / logo
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: VocaliaTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: VocaliaTheme.primary.withAlpha(60),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text('🗣️', style: TextStyle(fontSize: 52)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Vocalia',
+            style: TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF2D2D3A),
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tu voz, con inteligencia',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade500,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 24),
+          // What is Vocalia
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '¿Qué es Vocalia?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2D2D3A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Vocalia da voz a personas que no pueden hablar. '
+                  'Selecciona pictogramas (imágenes) y la app construye frases y las dice en voz alta. '
+                  'Así de simple.',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    height: 1.5,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Unique benefits
+          _BenefitCard(
+            emoji: '🧠',
+            title: 'Inteligencia Artificial',
+            description:
+                'Predice qué necesitas decir antes de que lo pidas. '
+                'Ninguna otra app AAC tiene IA que aprenda de ti.',
+            gradient: const [Color(0xFF7B61FF), Color(0xFF9B8AFF)],
+          ),
+          _BenefitCard(
+            emoji: '👁️',
+            title: 'Sin tocar la pantalla',
+            description:
+                'Funciona con la mirada, inclinando el móvil o por barrido. '
+                'Otras apps necesitan dispositivos de miles de euros. Vocalia lo hace gratis.',
+            gradient: const [Color(0xFF00D4AA), Color(0xFF4DDBBB)],
+          ),
+          _BenefitCard(
+            emoji: '🎙️',
+            title: 'Memoria contextual',
+            description:
+                'Escucha el entorno y recuerda planes: "Mañana vamos al parque". '
+                'Al día siguiente sugiere pictogramas del parque. Único en el mundo.',
+            gradient: const [Color(0xFFFF6B9D), Color(0xFFFF8EB3)],
+          ),
+          _BenefitCard(
+            emoji: '⚙️',
+            title: 'Se adapta a cada persona',
+            description:
+                'Configura automáticamente el tamaño, la velocidad y la complejidad '
+                'según las capacidades del usuario. No hay dos Vocalias iguales.',
+            gradient: const [Color(0xFFFFA726), Color(0xFFFFBD5A)],
+          ),
+          _BenefitCard(
+            emoji: '💰',
+            title: '100% gratuita',
+            description:
+                'Apps similares cuestan 300€ y solo funcionan en iPad. '
+                'Vocalia funciona en cualquier móvil, tablet u ordenador. Gratis.',
+            gradient: const [Color(0xFF5B3FD9), Color(0xFF7B61FF)],
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -415,6 +555,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   // ═══════════════════════════════════════════════════════
   Widget _buildNavBar() {
     final isLast = _currentPage == _totalPages - 1;
+    final isWelcome = _currentPage == 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -437,10 +578,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             child: ElevatedButton(
               onPressed: _canProceed ? _nextPage : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: VocaliaTheme.primary,
+                backgroundColor: isWelcome
+                    ? VocaliaTheme.primary
+                    : VocaliaTheme.primary,
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: Colors.grey.shade300,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isWelcome ? 40 : 32,
+                  vertical: isWelcome ? 18 : 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -451,11 +597,25 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isLast ? 'Empezar' : 'Siguiente',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    isWelcome
+                        ? 'Configurar'
+                        : isLast
+                            ? 'Empezar'
+                            : 'Siguiente',
+                    style: TextStyle(
+                      fontSize: isWelcome ? 18 : 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(isLast ? Icons.rocket_launch_rounded : Icons.arrow_forward_rounded, size: 20),
+                  Icon(
+                    isWelcome
+                        ? Icons.tune_rounded
+                        : isLast
+                            ? Icons.rocket_launch_rounded
+                            : Icons.arrow_forward_rounded,
+                    size: 20,
+                  ),
                 ],
               ),
             ),
@@ -469,6 +629,84 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 // ═══════════════════════════════════════════════════════
 // REUSABLE WIDGETS
 // ═══════════════════════════════════════════════════════
+
+class _BenefitCard extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String description;
+  final List<Color> gradient;
+
+  const _BenefitCard({
+    required this.emoji,
+    required this.title,
+    required this.description,
+    required this.gradient,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: gradient[0].withAlpha(40), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: gradient[0].withAlpha(15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradient),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 22)),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: gradient[0],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _PageWrapper extends StatelessWidget {
   final String emoji;
