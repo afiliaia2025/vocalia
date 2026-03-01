@@ -5,6 +5,7 @@ import '../models/pictogram.dart';
 import '../models/phrase.dart';
 import '../services/ai_service.dart';
 import '../services/tts_service.dart';
+import '../services/prediction_engine.dart';
 import '../data/pictogram_data.dart';
 
 /// Central state manager for the communication board.
@@ -41,6 +42,10 @@ class BoardProvider extends ChangeNotifier {
       PictogramData.getByCategory(_activeCategory);
 
   List<PictogramCategory> get categories => PictogramData.categories;
+
+  /// Context-aware predicted next pictograms
+  List<Pictogram> get suggestedPictograms =>
+      PredictionEngine.getSuggestions(_selectedPictograms);
 
   BoardProvider({
     required AIService aiService,

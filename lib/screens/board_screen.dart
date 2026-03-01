@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../config/theme.dart';
 import '../models/pictogram.dart';
 import '../providers/board_provider.dart';
+import '../data/pictogram_data.dart';
 import 'settings_screen.dart';
 import 'history_screen.dart';
 
@@ -40,7 +41,10 @@ class BoardScreen extends StatelessWidget {
               const SizedBox(height: 12),
               // ─── Category Tabs ───
               const _CategoryTabs(),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
+              // ─── Predictive Suggestions ───
+              const _SuggestionsRow(),
+              const SizedBox(height: 6),
               // ─── Pictogram Grid ───
               const Expanded(child: _PictogramGrid()),
               // ─── Action Buttons ───
@@ -355,6 +359,112 @@ class _MiniSpeakButton extends StatelessWidget {
           color: Colors.white,
           size: 22,
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PREDICTIVE SUGGESTIONS — Context-aware next-word predictions
+// ═══════════════════════════════════════════════════════
+class _SuggestionsRow extends StatelessWidget {
+  const _SuggestionsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final board = context.watch<BoardProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final suggestions = board.suggestedPictograms;
+
+    // Hide during generating/speaking states
+    if (suggestions.isEmpty || board.isGenerating || board.isSpeaking) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: suggestions.length + 1, // +1 for the sparkle icon
+        itemBuilder: (context, index) {
+          // First item: sparkle indicator
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      '→',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final pictogram = suggestions[index - 1];
+          final catIndex = PictogramData.categories
+              .indexWhere((c) => c.id == pictogram.category);
+          final catColor = catIndex >= 0
+              ? VocaliaTheme.categoryColors[catIndex % VocaliaTheme.categoryColors.length]
+              : VocaliaTheme.primary;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: GestureDetector(
+              onTap: () => board.addPictogram(pictogram),
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? catColor.withAlpha(25)
+                      : catColor.withAlpha(18),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: catColor.withAlpha(isDark ? 60 : 50),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(pictogram.emoji, style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 5),
+                    Text(
+                      pictogram.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white.withAlpha(200) : catColor.withAlpha(220),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
