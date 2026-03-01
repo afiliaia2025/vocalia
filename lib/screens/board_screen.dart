@@ -4,6 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../config/theme.dart';
 import '../models/pictogram.dart';
 import '../providers/board_provider.dart';
+import 'settings_screen.dart';
+import 'history_screen.dart';
 
 /// Main communication board screen — the heart of Vocalia.
 class BoardScreen extends StatelessWidget {
@@ -85,10 +87,21 @@ class _VocaliaAppBar extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          // History
+          IconButton(
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
+            },
+            icon: Icon(
+              Icons.history_rounded,
+              color: isDark ? VocaliaTheme.textDarkSecondary : VocaliaTheme.textSecondary,
+            ),
+            tooltip: 'Historial',
+          ),
           // Settings
           IconButton(
             onPressed: () {
-              // TODO: Open settings
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
             icon: Icon(
               Icons.settings_rounded,
