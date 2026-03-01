@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/pictogram.dart';
 import '../models/phrase.dart';
+import '../models/user_profile.dart';
 import '../services/ai_service.dart';
 import '../services/tts_service.dart';
 import '../services/prediction_engine.dart';
@@ -13,10 +14,11 @@ import '../data/pictogram_data.dart';
 class BoardProvider extends ChangeNotifier {
   final AIService _aiService;
   final TTSService _ttsService;
+  final UserProfile userProfile;
 
   // ─── Auto-speak debounce ───
   Timer? _autoSpeakTimer;
-  static const Duration autoSpeakDelay = Duration(milliseconds: 1800);
+  late final Duration autoSpeakDelay;
 
   // ─── State ───
   List<Pictogram> _selectedPictograms = [];
@@ -38,6 +40,18 @@ class BoardProvider extends ChangeNotifier {
   bool get hasSelection => _selectedPictograms.isNotEmpty;
   bool get canSpeak => _generatedText != null && _generatedText!.isNotEmpty;
 
+  /// Adaptive grid columns based on user profile
+  int get gridColumns => userProfile.gridColumns;
+
+  /// Adaptive pictogram scale based on user profile
+  double get pictogramScale => userProfile.pictogramScale;
+
+  /// Whether to show predictions (disabled for simple cognitive level)
+  bool get showPredictions => userProfile.showPredictions;
+
+  /// User's name for personalized UI
+  String get userName => userProfile.name;
+
   List<Pictogram> get currentCategoryPictograms =>
       PictogramData.getByCategory(_activeCategory);
 
@@ -50,8 +64,13 @@ class BoardProvider extends ChangeNotifier {
   BoardProvider({
     required AIService aiService,
     required TTSService ttsService,
+    UserProfile? userProfile,
   })  : _aiService = aiService,
-        _ttsService = ttsService;
+        _ttsService = ttsService,
+        userProfile = userProfile ?? UserProfile.defaultProfile {
+    autoSpeakDelay = Duration(milliseconds: this.userProfile.autoSpeakDelayMs);
+  }
+
 
   /// Initialize the AI service with an API key.
   void initializeAI(String apiKey) {

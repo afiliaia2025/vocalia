@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
+import 'dart:convert';
 import 'config/theme.dart';
 import 'services/ai_service.dart';
 import 'services/tts_service.dart';
 import 'providers/board_provider.dart';
 import 'screens/board_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'models/user_profile.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +26,9 @@ class VocaliaApp extends StatefulWidget {
 class _VocaliaAppState extends State<VocaliaApp> {
   final AIService _aiService = AIService();
   final TTSService _ttsService = TTSService();
+  UserProfile _userProfile = UserProfile.defaultProfile;
+  bool _onboardingComplete = false;
+  bool _loading = true;
 
   @override
   void initState() {
@@ -31,16 +38,51 @@ class _VocaliaAppState extends State<VocaliaApp> {
 
   Future<void> _initializeServices() async {
     await _ttsService.initialize();
+    // Check onboarding status
+    final prefs = await SharedPreferences.getInstance();
+    final complete = prefs.getBool('onboarding_complete') ?? false;
+    final profileJson = prefs.getString('user_profile');
+    UserProfile profile = UserProfile.defaultProfile;
+    if (profileJson != null) {
+      try {
+        profile = UserProfile.fromJson(jsonDecode(profileJson));
+      } catch (_) {}
+    }
+    if (mounted) {
+      setState(() {
+        _onboardingComplete = complete;
+        _userProfile = profile;
+        _loading = false;
+      });
+    }
+  }
+
+  void _onOnboardingComplete(UserProfile profile) {
+    setState(() {
+      _userProfile = profile;
+      _onboardingComplete = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: VocaliaTheme.lightTheme,
+        home: const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) => BoardProvider(
             aiService: _aiService,
             ttsService: _ttsService,
+            userProfile: _userProfile,
           ),
         ),
       ],
@@ -50,7 +92,9 @@ class _VocaliaAppState extends State<VocaliaApp> {
         theme: VocaliaTheme.lightTheme,
         darkTheme: VocaliaTheme.darkTheme,
         themeMode: ThemeMode.system,
-        home: const _ApiKeyGate(),
+        home: _onboardingComplete
+            ? const _ApiKeyGate()
+            : OnboardingScreen(onComplete: _onOnboardingComplete),
       ),
     );
   }

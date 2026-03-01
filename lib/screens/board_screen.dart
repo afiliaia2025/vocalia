@@ -376,8 +376,8 @@ class _SuggestionsRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final suggestions = board.suggestedPictograms;
 
-    // Hide during generating/speaking states
-    if (suggestions.isEmpty || board.isGenerating || board.isSpeaking) {
+    // Hide when disabled by profile, no suggestions, or generating/speaking
+    if (!board.showPredictions || suggestions.isEmpty || board.isGenerating || board.isSpeaking) {
       return const SizedBox.shrink();
     }
 
@@ -555,8 +555,11 @@ class _PictogramGrid extends StatelessWidget {
     final pictograms = board.currentCategoryPictograms;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Responsive columns
-    final crossAxisCount = screenWidth < 400 ? 3 : (screenWidth < 600 ? 3 : (screenWidth < 900 ? 4 : 6));
+    // Adaptive columns: use profile setting, adjusted for screen width
+    final profileCols = board.gridColumns;
+    final crossAxisCount = screenWidth < 400
+        ? profileCols.clamp(2, 3)
+        : (screenWidth < 600 ? profileCols : (screenWidth < 900 ? profileCols + 1 : profileCols + 3));
     // Get current category index for color
     final catIndex = board.categories.indexWhere((c) => c.id == board.activeCategory);
     final catColor = VocaliaTheme.categoryColors[catIndex.clamp(0, VocaliaTheme.categoryColors.length - 1)];
